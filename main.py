@@ -27,3 +27,10 @@ def safe_stock_price_into_db(db_file, price):
     cur.execute("INSERT INTO stock_prices (symbol, price, timestamp) VALUES (?, ?, ?)", ("MSFT", float(price), timestamp))
     conn.commit()
     conn.close()
+
+def clear_db(db_file, table_name):
+    conn = sqlite3.connect(db_file)
+    cur = conn.cursor()
+    cur.execute("DELETE FROM "+table_name+" WHERE 1=1")
+    conn.commit()
+    conn.close()
