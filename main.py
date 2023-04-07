@@ -1,6 +1,4 @@
 import yfinance as yf
-import requests
-from bs4 import BeautifulSoup
 import datetime
 import sqlite3
 
@@ -14,13 +12,6 @@ def get_1m_historical_price_data(ticker):
     hist_data["Signal"] = 0
     hist_data['Datetime'] = hist_data['Datetime'].dt.tz_convert('Europe/Berlin').dt.tz_localize(None)
     return hist_data
-
-# def get_yahoo_finance_live_price_from_ticker(ticker): 
-#     url = f"https://finance.yahoo.com/quote/{ticker}"
-#     response = requests.get(url)
-#     soup = BeautifulSoup(response.content, 'html.parser')
-#     price = soup.find("fin-streamer", class_="Fw(b) Fz(36px) Mb(-4px) D(ib)").text
-#     return price
 
 def store_historical_price_data_to_db(db_file, ticker, historical_price_data):
     conn = sqlite3.connect(db_file)

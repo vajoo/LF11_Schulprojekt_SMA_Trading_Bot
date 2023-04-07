@@ -3,78 +3,100 @@ import matplotlib.pyplot as plt
 import yfinance as yf
 from scipy.optimize import brute
 
-class sma():
+class SMA():
 
     def __init__(self, symbol, sma=(50, 100)):
         self.symbol = symbol
         self.sma = sma
         self.amount_of_trades = 0
-        self.dataframe = self.create_dataframe()
+        self.buy_price = []
+        self.sell_price = []
+        self.absolute_return = 0
+        self.dataframe = self.create_dataframe_with_historical_prices_for_symbol()
+        self.reset_dataframe_index()
+        self.convert_dataframe_datetime_column_to_european_timezone()
+        self.set_sma_columns()
+        self.append_returns_to_dataframe()
 
-    def create_dataframe(self):
-        return self.append_sma_parameter_and_returns(self.get_1m_historical_price_data(self.symbol))
+    def create_dataframe_with_historical_prices_for_symbol(self):
+        return self.get_1m_historical_price_data()
 
-    def get_1m_historical_price_data(self, ticker):
-        interval = '1m'
-        period = '7d'
-        hist_data = yf.download(ticker, interval=interval, period=period, rounding=True)
-        hist_data = hist_data['Close'].reset_index()
-        hist_data["Signal"] = 0
-        hist_data['Datetime'] = hist_data['Datetime'].dt.tz_convert('Europe/Berlin').dt.tz_localize(None)
-        return hist_data
-
-    def append_sma_parameter_and_returns(self, df):
-        df["SMA_S"] = df["Close"].rolling(self.sma[0]).mean()
-        df["SMA_L"] = df["Close"].rolling(self.sma[1]).mean()
-        df["returns"] = np.log(df["Close"].div(df["Close"].shift(1)))
-        return df
-
-    def set_parameters(self, sma = None):
-        if sma is not None:
-            self.sma = sma
-            self.dataframe["SMA_S"] = self.dataframe["Close"].rolling(self.sma[0]).mean()
-            self.dataframe["SMA_L"] = self.dataframe["Close"].rolling(self.sma[1]).mean()
+    def get_1m_historical_price_data(self):
+        return yf.download(self.symbol, interval='1m', period='7d', rounding=True)
     
-    def implement_sma_strategy(self):
-        data = self.dataframe
-        sma_s = data["SMA_S"]
-        sma_l = data["SMA_L"]
-        close = data["Close"]
-        buy_price = []
-        sell_price = []
-        sma_signal = []
-        signal = -1
+    def reset_dataframe_index(self):
+        self.dataframe = self.dataframe['Close'].reset_index()
         
-        for i in range(len(close)):
-            if sma_s[i] > sma_l[i]:
-                if signal != 1:
-                    buy_price.append(close.iloc[i])
-                    signal = 1
-                    sma_signal.append(signal)
-            elif sma_l[i] > sma_s[i]:
-                if signal != -1:
-                    sell_price.append(close.iloc[i])
-                    signal = -1
-                    sma_signal.append(-1)
-                
-        if len(buy_price) != len(sell_price):
-            if(sma_signal[-1] == 1):
-                del buy_price[-1]
-                del sma_signal[-1]
-
-        absolute_return = 0
-        self.amount_of_trades = len(buy_price)
-
-        for i in range(0, len(buy_price)):
-            absolute_return += sell_price[i] - buy_price[i]
-
-        return round(absolute_return, 2)
+    def convert_dataframe_datetime_column_to_european_timezone(self):
+        self.dataframe['Datetime'] = self.dataframe['Datetime'].dt.tz_convert('Europe/Berlin').dt.tz_localize(None)
     
-    def update_and_run(self, sma):
-        self.set_parameters((int(sma[0]), int(sma[1])))
-        return -self.implement_sma_strategy()
+    def append_returns_to_dataframe(self):
+        self.dataframe["returns"] = np.log(self.dataframe["Close"].div(self.dataframe["Close"].shift(1)))
 
     def optimize_parameters(self, sma_s_range, sma_l_range):
-        # (10, 50, 1), (100, 252, 1)
-        opt = brute(self.update_and_run, (sma_s_range, sma_l_range), finish=None)
-        return opt, -self.update_and_run(opt)
+        # (10, 51, 1), (100, 253, 1)
+        optimal_sma_parameter = brute(self.run_sma_strategy, (sma_s_range, sma_l_range), finish=None)
+        self.set_sma_parameter((optimal_sma_parameter[0], optimal_sma_parameter[1]))
+    
+    def run_sma_strategy(self, sma):
+        self.set_sma_parameter(sma)
+        self.set_sma_columns()
+        self.set_buy_price_list_and_sell_price_list()
+        self.delete_last_element_from_buy_price_element_if_buy_signal_was_last_action()
+        self.calculate_absolute_return_of_sma_strategy()
+        return -self.get_absolute_return_of_sma_strategy()
+    
+    def set_sma_parameter(self, sma):
+        self.sma = (int(sma[0]), int(sma[1]))
+
+    def set_sma_columns(self):
+        self.dataframe["SMA_S"] = self.dataframe["Close"].rolling(self.sma[0]).mean()
+        self.dataframe["SMA_L"] = self.dataframe["Close"].rolling(self.sma[1]).mean()
+
+    def get_absolute_return_of_sma_strategy(self):
+        return round(self.absolute_return, 2)
+    
+    def set_buy_price_list_and_sell_price_list(self):
+        signal = -1
+        self.buy_price = []
+        self.sell_price = []
+        
+        for i in range(len(self.dataframe["Close"])):
+            if self.dataframe["SMA_S"][i] > self.dataframe["SMA_L"][i]:
+                if signal != 1:
+                    self.buy_price.append(self.dataframe["Close"].iloc[i])
+                    signal = 1
+            elif self.dataframe["SMA_L"][i] > self.dataframe["SMA_S"][i]:
+                if signal != -1:
+                    self.sell_price.append(self.dataframe["Close"].iloc[i])
+                    signal = -1
+
+    def delete_last_element_from_buy_price_element_if_buy_signal_was_last_action(self):
+        if len(self.buy_price) != len(self.sell_price):
+            del self.buy_price[-1]
+
+    def calculate_absolute_return_of_sma_strategy(self):
+        abs_ret = 0
+        for i in range(0, len(self.buy_price)):
+            abs_ret += self.sell_price[i] - self.buy_price[i]
+        self.absolute_return = abs_ret
+
+    def get_amount_of_trades(self):
+        return len(self.buy_price)
+    
+    def set_amount_of_trades(self):
+        self.amount_of_trades = len(self.buy_price)
+    
+
+    
+msft = SMA("MSFT")
+msft.run_sma_strategy(msft.sma)
+print(msft.get_absolute_return_of_sma_strategy())
+print(msft.dataframe)
+
+
+msft.optimize_parameters((10, 51, 1), (100, 253, 1))
+msft.run_sma_strategy(msft.sma)
+print(msft.sma)
+print(msft.get_absolute_return_of_sma_strategy())
+print(msft.dataframe)
