@@ -3,100 +3,110 @@ import matplotlib.pyplot as plt
 import yfinance as yf
 from scipy.optimize import brute
 
-class SMA():
 
-    def __init__(self, symbol, sma=(50, 100)):
+
+class GenerateHistoricalDataframeForStockprices():
+    def __init__(self, symbol):
         self.symbol = symbol
-        self.sma = sma
-        self.amount_of_trades = 0
-        self.buy_price = []
-        self.sell_price = []
-        self.absolute_return = 0
-        self.dataframe = self.create_dataframe_with_historical_prices_for_symbol()
-        self.reset_dataframe_index()
-        self.convert_dataframe_datetime_column_to_european_timezone()
-        self.set_sma_columns()
-        self.append_returns_to_dataframe()
+        self.dataframe = None
+        self.__create_dataframe_with_historical_prices_for_symbol()
+        self.__reset_dataframe_index()
+        self.__convert_dataframe_datetime_column_to_european_timezone()
+        self.__append_stock_returns_to_dataframe()
 
-    def create_dataframe_with_historical_prices_for_symbol(self):
-        return self.get_1m_historical_price_data()
+    def get_dataframe(self):
+        return self.dataframe
 
-    def get_1m_historical_price_data(self):
-        return yf.download(self.symbol, interval='1m', period='7d', rounding=True)
+    def __create_dataframe_with_historical_prices_for_symbol(self):
+        self.dataframe = yf.download(self.symbol, interval='1m', period='7d', rounding=True)
     
-    def reset_dataframe_index(self):
+    def __reset_dataframe_index(self):
         self.dataframe = self.dataframe['Close'].reset_index()
         
-    def convert_dataframe_datetime_column_to_european_timezone(self):
+    def __convert_dataframe_datetime_column_to_european_timezone(self):
         self.dataframe['Datetime'] = self.dataframe['Datetime'].dt.tz_convert('Europe/Berlin').dt.tz_localize(None)
     
-    def append_returns_to_dataframe(self):
+    def __append_stock_returns_to_dataframe(self):
         self.dataframe["returns"] = np.log(self.dataframe["Close"].div(self.dataframe["Close"].shift(1)))
 
-    def optimize_parameters(self, sma_s_range, sma_l_range):
-        # (10, 51, 1), (100, 253, 1)
-        optimal_sma_parameter = brute(self.run_sma_strategy, (sma_s_range, sma_l_range), finish=None)
-        self.set_sma_parameter((optimal_sma_parameter[0], optimal_sma_parameter[1]))
-    
-    def run_sma_strategy(self, sma):
-        self.set_sma_parameter(sma)
-        self.set_sma_columns()
-        self.set_buy_price_list_and_sell_price_list()
-        self.delete_last_element_from_buy_price_element_if_buy_signal_was_last_action()
-        self.calculate_absolute_return_of_sma_strategy()
-        return -self.get_absolute_return_of_sma_strategy()
-    
-    def set_sma_parameter(self, sma):
-        self.sma = (int(sma[0]), int(sma[1]))
 
-    def set_sma_columns(self):
-        self.dataframe["SMA_S"] = self.dataframe["Close"].rolling(self.sma[0]).mean()
-        self.dataframe["SMA_L"] = self.dataframe["Close"].rolling(self.sma[1]).mean()
+
+class SmaStrategyBacktester():
+    def __init__(self, dataframe):
+        self.dataframe = dataframe
+        self.buy_prices_list = []
+        self.sell_prices_list = []
+        self.absolute_return = 0
+        self.amount_of_trades = 0
 
     def get_absolute_return_of_sma_strategy(self):
         return round(self.absolute_return, 2)
+
+    def get_amount_of_trades(self):
+        return self.amount_of_trades
+
+    def get_optimal_sma_parameter(self, sma_s_range, sma_l_range):
+        # for example (10, 51, 1), (100, 253, 1)
+        optimal_sma_parameter = brute(self.run_sma_strategy, (sma_s_range, sma_l_range), finish=None)
+        self.run_sma_strategy((optimal_sma_parameter[0], optimal_sma_parameter[1]))
+        return optimal_sma_parameter
     
-    def set_buy_price_list_and_sell_price_list(self):
-        signal = -1
-        self.buy_price = []
-        self.sell_price = []
+    def run_sma_strategy(self, sma):
+        # for example (50, 100)
+        self.__update_sma_columns_in_dataframe(sma)
+        self.__set_buy_price_list_and_sell_price_list()
+        self.absolute_return = self.__calculate_absolute_return_of_sma_strategy()
+        self.amount_of_trades = self.__calculate_amount_of_trades()
+        return -self.absolute_return
+
+    def __update_sma_columns_in_dataframe(self, sma):
+        if sma is not None:
+            self.dataframe["SMA_S"] = self.dataframe["Close"].rolling(int(sma[0])).mean()
+            self.dataframe["SMA_L"] = self.dataframe["Close"].rolling(int(sma[1])).mean()
+    
+    def __set_buy_price_list_and_sell_price_list(self):
+        last_signal = "Sell"
+        self.buy_prices_list = []
+        self.sell_prices_list = []
         
         for i in range(len(self.dataframe["Close"])):
             if self.dataframe["SMA_S"][i] > self.dataframe["SMA_L"][i]:
-                if signal != 1:
-                    self.buy_price.append(self.dataframe["Close"].iloc[i])
-                    signal = 1
+                if last_signal != "Buy":
+                    self.buy_prices_list.append(self.dataframe["Close"].iloc[i])
+                    last_signal = "Buy"
             elif self.dataframe["SMA_L"][i] > self.dataframe["SMA_S"][i]:
-                if signal != -1:
-                    self.sell_price.append(self.dataframe["Close"].iloc[i])
-                    signal = -1
+                if last_signal != "Sell":
+                    self.sell_prices_list.append(self.dataframe["Close"].iloc[i])
+                    last_signal = "Sell"
 
-    def delete_last_element_from_buy_price_element_if_buy_signal_was_last_action(self):
-        if len(self.buy_price) != len(self.sell_price):
-            del self.buy_price[-1]
+        buy_prices_list = self.__delete_last_element_from_buy_prices_list_if_last_signal_was_buy()
+        return [buy_prices_list, self.sell_prices_list]
 
-    def calculate_absolute_return_of_sma_strategy(self):
+    def __delete_last_element_from_buy_prices_list_if_last_signal_was_buy(self):
+        if len(self.buy_prices_list) != len(self.sell_prices_list):
+            del self.buy_prices_list[-1]
+        return self.buy_prices_list
+
+    def __calculate_absolute_return_of_sma_strategy(self):
         abs_ret = 0
-        for i in range(0, len(self.buy_price)):
-            abs_ret += self.sell_price[i] - self.buy_price[i]
-        self.absolute_return = abs_ret
-
-    def get_amount_of_trades(self):
-        return len(self.buy_price)
+        for i in range(0, len(self.buy_prices_list)):
+            abs_ret += self.sell_prices_list[i] - self.buy_prices_list[i]
+        return abs_ret
     
-    def set_amount_of_trades(self):
-        self.amount_of_trades = len(self.buy_price)
+    def __calculate_amount_of_trades(self):
+        return len(self.buy_prices_list) * 2
     
 
-    
-msft = SMA("MSFT")
-msft.run_sma_strategy(msft.sma)
-print(msft.get_absolute_return_of_sma_strategy())
-print(msft.dataframe)
 
+msft_dataframe = GenerateHistoricalDataframeForStockprices("MSFT")
+# print(msft_dataframe.get_dataframe())
 
-msft.optimize_parameters((10, 51, 1), (100, 253, 1))
-msft.run_sma_strategy(msft.sma)
-print(msft.sma)
-print(msft.get_absolute_return_of_sma_strategy())
-print(msft.dataframe)
+msft_backtester = SmaStrategyBacktester(msft_dataframe.get_dataframe())
+msft_backtester.run_sma_strategy((50, 140))
+print("Absolute return: " + str(msft_backtester.get_absolute_return_of_sma_strategy()))
+print("Amount of trades: " + str(msft_backtester.get_amount_of_trades()))
+optimal_parameter = msft_backtester.get_optimal_sma_parameter((50, 51, 1), (120, 130, 1))
+print(optimal_parameter)
+# print(msft_backtester.dataframe)
+print("Absolute return: " + str(msft_backtester.get_absolute_return_of_sma_strategy()))
+print("Amount of trades: " + str(msft_backtester.get_amount_of_trades()))
