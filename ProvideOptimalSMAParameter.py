@@ -7,7 +7,7 @@ def store_optimal_sma_parameter_to_db(symbol, optimal_parameter, absolute_return
     cur = conn.cursor()
     cur.execute("CREATE TABLE IF NOT EXISTS sma_optimal_parameter (Symbol TEXT, Optimal_Parameter TEXT, Absolute_Return REAL, Amount_Of_Trades)")
     if get_optimal_sma_parameter_from_db(symbol) == None:
-        cur.execute("INSERT INTO sma_optimal_parameter (Symbol, Optimal_Parameter, Absolute_Return, Amount_Of_Trades) VALUES (?, ?, ?, ?)", (symbol, str(optimal_parameter), absolute_return, amount_of_trades))
+        cur.execute("INSERT INTO sma_optimal_parameter (Symbol, Optimal_Parameter, Absolute_Return, Amount_Of_Trades, Last_Signal) VALUES (?, ?, ?, ?, ?)", (symbol, str(optimal_parameter), absolute_return, amount_of_trades, "Sell"))
     else:
         cur.execute("UPDATE sma_optimal_parameter SET Optimal_Parameter = ?, Absolute_Return = ?, Amount_Of_Trades = ? WHERE Symbol = ?", (str(optimal_parameter), absolute_return, amount_of_trades, symbol))
     conn.commit()
@@ -22,6 +22,20 @@ def get_optimal_sma_parameter_from_db(symbol):
     conn.close()
     if opt_param != None:
         return eval(opt_param[0])
+    
+def set_last_signal(symbol, new_last_signal):
+    conn = sqlite3.connect(db_file)
+    cur = conn.cursor()
+    cur.execute("UPDATE sma_optimal_parameter SET Last_Signal = ? WHERE Symbol = ?", (new_last_signal, symbol))
+    conn.commit()
+    conn.close()
+
+def get_last_signal(symbol):
+    conn = sqlite3.connect(db_file)
+    cur = conn.cursor()
+    cur.execute("SELECT Last_Signal FROM sma_optimal_parameter WHERE Symbol = ?", (symbol))
+    conn.commit()
+    conn.close()
     
 def clear_table():
     conn = sqlite3.connect(db_file)
