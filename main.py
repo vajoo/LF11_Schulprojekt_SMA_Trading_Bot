@@ -11,7 +11,7 @@ def backtest():
     UpdateStockPricesDB.store_historical_price_data_to_db()
     msft_backtester = SmaStrategyBacktester(UpdateStockPricesDB.get_historical_price_data_from_db())
     optimal_sma_parameter = msft_backtester.get_optimal_sma_parameter((10, 51, 1), (100, 251, 1))
-    ProvideOptimalSMAParameter.store_optimal_sma_parameter_to_db("MSFT", optimal_sma_parameter, msft_backtester.get_absolute_return_of_sma_strategy(), msft_backtester.get_amount_of_trades())
+    ProvideOptimalSMAParameter.store_optimal_sma_parameter_to_db(symbol, optimal_sma_parameter, msft_backtester.get_absolute_return_of_sma_strategy(), msft_backtester.get_amount_of_trades())
 
 def run_strategy():
     msft_backtester = SmaStrategyBacktester(UpdateStockPricesDB.get_historical_price_data_from_db())
@@ -41,5 +41,3 @@ if __name__ == "__main__":
             UpdateStockPricesDB.store_historical_price_data_to_db()
             check_signal()
             time.sleep(1)
-
-# TODO add column "Signal" to sma_optimal_parameter, check last column in prices db -> if buy then change signal to buy etc.
