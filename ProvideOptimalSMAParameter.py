@@ -34,8 +34,10 @@ def get_last_signal(symbol):
     conn = sqlite3.connect(db_file)
     cur = conn.cursor()
     cur.execute("SELECT Last_Signal FROM sma_optimal_parameter WHERE Symbol = ?", (symbol))
+    signal = cur.fetchone()
     conn.commit()
     conn.close()
+    return signal
     
 def clear_table():
     conn = sqlite3.connect(db_file)

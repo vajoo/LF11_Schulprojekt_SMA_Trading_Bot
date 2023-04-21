@@ -57,7 +57,7 @@ Helferdatei mit Funktionen, die eine SQLite-Datenbank mit dem Namen "trading_bot
 - set_last_signal(symbol: str, new_last_signal: str):
     - aktualisiert das letzte Signal für ein bestimmtes Symbol in der Datenbank.
 
-- get_last_signal(symbol: str):
+- get_last_signal(symbol: str) -> str:
     - gibt das letzte Signal für ein bestimmtes Symbol aus der Datenbank zurück.
 
 - clear_table():
