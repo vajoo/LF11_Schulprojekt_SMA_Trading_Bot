@@ -5,7 +5,7 @@ db_file = "trading_bot.db"
 def store_optimal_sma_parameter_to_db(symbol, optimal_parameter, absolute_return, amount_of_trades):
     conn = sqlite3.connect(db_file)
     cur = conn.cursor()
-    cur.execute("CREATE TABLE IF NOT EXISTS sma_optimal_parameter (Symbol TEXT, Optimal_Parameter TEXT, Absolute_Return REAL, Amount_Of_Trades)")
+    cur.execute("CREATE TABLE IF NOT EXISTS sma_optimal_parameter (Symbol TEXT, Optimal_Parameter TEXT, Absolute_Return REAL, Amount_Of_Trades INT, Last_Signal TEXT)")
     if get_optimal_sma_parameter_from_db(symbol) == None:
         cur.execute("INSERT INTO sma_optimal_parameter (Symbol, Optimal_Parameter, Absolute_Return, Amount_Of_Trades, Last_Signal) VALUES (?, ?, ?, ?, ?)", (symbol, str(optimal_parameter), absolute_return, amount_of_trades, "Sell"))
     else:
