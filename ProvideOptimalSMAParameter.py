@@ -33,7 +33,7 @@ def set_last_signal(symbol, new_last_signal):
 def get_last_signal(symbol):
     conn = sqlite3.connect(db_file)
     cur = conn.cursor()
-    cur.execute("SELECT Last_Signal FROM sma_optimal_parameter WHERE Symbol = ?", (symbol))
+    cur.execute("SELECT Last_Signal FROM sma_optimal_parameter WHERE Symbol = ?", (symbol,))
     signal = cur.fetchone()
     conn.commit()
     conn.close()
