@@ -11,10 +11,14 @@ wird verkauft. Um jetzt die optimale Kombination von short SMA und long SMA zu f
 Aktienkursen der letzten 7 Tage ein optimales SMA Parameter Paar generiert. Das ergebnis, sowie der absolute return of invest und die Anzahl erforderlicher trades
 wird dann mit dem Aktienkürzel in einer Datenbank Tabelle gespeichert.
 
+</br>
+
 # Installation der Packages und starten des Programmes
 
 Einfach den Befehl pip install -r requirements.txt ausführen und alle nötigen packages werden installiert.
 Anschließend dann die Main.py Datei ausführen und es werden zuerst die besten Parameter für die SMA Strategie "gebacktested", was einen Moment dauert. Anschließend startet dann der minütliche "Test" ob gekauft oder verkauft werden soll. Bei Kauf- / Verkaufsignalen wird in der Konsole der aktuelle Preis mit dem jeweiligen Signal ausgegeben
+
+</br>
 
 # Erklärung der Klassen und Funktionen
 
@@ -36,6 +40,7 @@ Die SmaStrategyBacktester-Klasse enthält die Backtesting-Strategie auf der Basi
 - get_amount_of_trades() -> int:
     - Diese Funktion gibt die Anzahl der Trades zurück, die von der Backtesting-Strategie durchgeführt wurden.
 
+</br>
 
 ## GenerateHistoricalDataframeForStock-Klasse
 Die Klasse GenerateHistoricalDataframeForStock dient dazu, ein DataFrame mit historischen Preisen für eine bestimmte Aktie zu erstellen. Dazu werden die numpy und yfinance Bibliotheken importiert.
@@ -45,10 +50,12 @@ Die Klasse GenerateHistoricalDataframeForStock dient dazu, ein DataFrame mit his
 - get_dataframe(self) -> pandas.DataFrame:
     - Gibt das DataFrame mit historischen Preisen zurück.
 
+</br>
 
 ## UpdateStockPricesDB.py
 Helferdatei mit Funktionen, welche aus der Datenbank mit den historischen und aktuellen Preisen für eine Aktie ein Pandas Dataframe erstellt und ein Pandas Dataframe auch in die Datenbank speichern kann
 
+</br>
 
 ## ProvideOptimalSMAParameter.py
 Helferdatei mit Funktionen, die eine SQLite-Datenbank mit dem Namen "trading_bot.db" verwalten. Die Datenbank speichert optimale Parameter für einen Simple Moving Average (SMA).
