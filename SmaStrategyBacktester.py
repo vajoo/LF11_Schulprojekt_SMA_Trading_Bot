@@ -14,7 +14,7 @@ class SmaStrategyBacktester():
         self.run_sma_strategy((optimal_sma_parameter[0], optimal_sma_parameter[1]))
         return (int(optimal_sma_parameter[0]), int(optimal_sma_parameter[1]))
     
-    def run_sma_strategy(self, sma):
+    def run_sma_strategy(self, sma): 
         # for example (50, 100)
         self.__update_sma_columns_in_dataframe(sma)
         self.__set_buy_price_list_and_sell_price_list()

@@ -11,6 +11,11 @@ wird verkauft. Um jetzt die optimale Kombination von short SMA und long SMA zu f
 Aktienkursen der letzten 7 Tage ein optimales SMA Parameter Paar generiert. Das ergebnis, sowie der absolute return of invest und die Anzahl erforderlicher trades
 wird dann mit dem Aktienkürzel in einer Datenbank Tabelle gespeichert.
 
+# Installation der Packages und starten des Programmes
+
+Einfach den Befehl pip install -r requirements.txt ausführen und alle nötigen packages werden installiert.
+Anschließend dann die Main.py Datei ausführen und es werden zuerst die besten Parameter für die SMA Strategie "gebacktested", was einen Moment dauert. Anschließend startet dann der minütliche "Test" ob gekauft oder verkauft werden soll. Bei Kauf- / Verkaufsignalen wird in der Konsole der aktuelle Preis mit dem jeweiligen Signal ausgegeben
+
 # Erklärung der Klassen und Funktionen
 
 ## SmaStrategyBacktester-Klasse

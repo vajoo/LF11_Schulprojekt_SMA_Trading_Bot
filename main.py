@@ -5,7 +5,8 @@ import ProvideOptimalSMAParameter
 import time
 from datetime import datetime
 
-symbol = "MSFT"
+# Hier einfach das Tickersymbol (Aktienkürzel) ändern, um für andere Aktien den Bot laufen zu lassen, z.B. AAPL, NVDA, JNJ, ...
+symbol = "JNJ"
 
 def backtest():
     UpdateStockPricesDB.store_historical_price_data_to_db()
@@ -35,9 +36,11 @@ if __name__ == "__main__":
     backtest()
     print("Backtest finished")
     while True:
-        timestamp = int(time.time())
-        hour_and_minute = int(datetime.now().strftime("%H%M"))
-        if timestamp % 60 == 0 and hour_and_minute >= 1531 and hour_and_minute < 2200:
-            UpdateStockPricesDB.store_historical_price_data_to_db()
-            check_signal()
-            time.sleep(1)
+        weekday = datetime.today().weekday()
+        if weekday != 5 and weekday != 6:
+            timestamp = int(time.time())
+            hour_and_minute = int(datetime.now().strftime("%H%M"))
+            if timestamp % 60 == 0 and hour_and_minute >= 1531 and hour_and_minute < 2200:
+                UpdateStockPricesDB.store_historical_price_data_to_db()
+                check_signal()
+                time.sleep(1)
